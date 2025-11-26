@@ -48,7 +48,7 @@ app.listen(PORT, () => {
 // Keep the server awake on Render
 
 setInterval(() => {
-    https.get('https://licxov1-poan.onrender.com', (res) => {
+    https.get('https://licxowebsite.onrender.com/', (res) => {
       console.log(`Server hit with status code: ${res.statusCode}`);
     }).on('error', (e) => {
       console.error(`Got error: ${e.message}`);
