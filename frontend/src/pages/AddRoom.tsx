@@ -3,6 +3,7 @@ import { Form, Input, Select, SelectItem, Button } from "@heroui/react";
 import DefaultLayout from "@/layouts/default";
 
 // --- Type Definitions ---
+const API_BASE = import.meta.env.VITE_Server_API_URL ?? "";
 
 /** Interface for a file/preview object in the imagePreviews state */
 interface ImagePreview {
@@ -22,7 +23,11 @@ export default function CreateHotelForm(): JSX.Element {
   const [errors, setErrors] = React.useState<ValidationErrors>({});
   const [submitting, setSubmitting] = React.useState<boolean>(false);
   const [serverMsg, setServerMsg] = React.useState<string | null>(null);
-  
+  const [location, setLocation] = React.useState({
+  state: "",
+  district: ""
+});
+
   // Ref for the native file input element
   const fileRef = React.useRef<HTMLInputElement>(null);
 
@@ -149,11 +154,11 @@ export default function CreateHotelForm(): JSX.Element {
     // Get files from the ref
     const files: FileList | null = fileRef.current?.files ?? null;
 
-    // Append files explicitly under images[] to the FormData object
+    // Append files explicitly under `images` to match multer's field name
     if (files && files.length > 0) {
-      fd.delete("images[]"); // Remove any existing entry (from standard form submission)
+      fd.delete("images"); // Remove any existing entry (from standard form submission)
       for (let i = 0; i < files.length; i++) {
-        fd.append("images[]", files[i]);
+        fd.append("images", files[i]);
       }
     }
 
@@ -166,7 +171,8 @@ export default function CreateHotelForm(): JSX.Element {
     setSubmitting(true);
 
     try {
-      const res = await fetch("/api/hotels", {
+     
+      const res = await fetch( `${API_BASE}api/v1/hotels/create`, {
         method: "POST",
         body: fd,
       });
@@ -234,15 +240,7 @@ export default function CreateHotelForm(): JSX.Element {
             errorMessage={() => errors.phone}
           />
 
-          <Input
-            isRequired
-            label="Price"
-            labelPlacement="outside"
-            name="price"
-            placeholder="5500"
-            type="number"
-            errorMessage={() => errors.price}
-          />
+         
 
           <Input
             isRequired
@@ -252,6 +250,19 @@ export default function CreateHotelForm(): JSX.Element {
             placeholder="2 BHK"
             errorMessage={() => errors.room}
           />
+          <Select
+            isRequired
+            label="Room"
+            labelPlacement="outside"
+            name="room"
+            placeholder="Select Room Type"
+            errorMessage={() => errors.room}
+          >
+            <SelectItem key="1bhk">1 BHK</SelectItem>
+            <SelectItem key="2bhk">2 BHK</SelectItem>
+            <SelectItem key="3bhk">3 BHK</SelectItem>
+            <SelectItem key="4bhk">4 BHK</SelectItem>
+          </Select>
 
           <Select
             isRequired
@@ -275,6 +286,31 @@ export default function CreateHotelForm(): JSX.Element {
             placeholder="Near City Mall"
             errorMessage={() => errors.address1}
           />
+         <Input
+  isRequired
+  label="State"
+  labelPlacement="outside"
+  name="state"
+  value={location.state}
+  onChange={(e) =>
+    setLocation((prev) => ({ ...prev, state: e.target.value }))
+  }
+  placeholder="Uttar Pradesh"
+  errorMessage={() => errors.state}
+/>
+
+<Input
+  isRequired
+  label="District"
+  labelPlacement="outside"
+  name="district"
+  value={location.district}
+  onChange={(e) =>
+    setLocation((prev) => ({ ...prev, district: e.target.value }))
+  }
+  placeholder="Lucknow"
+  errorMessage={() => errors.district}
+/>
 
           <Input
             isRequired
@@ -285,24 +321,22 @@ export default function CreateHotelForm(): JSX.Element {
             errorMessage={() => errors.district}
           />
 
-          <Input
-            isRequired
-            label="State"
-            labelPlacement="outside"
-            name="state"
-            placeholder="Uttar Pradesh"
-            errorMessage={() => errors.state}
-          />
+          
 
           {/* Amenities/Features */}
-          <Input
+       
+          <Select
             isRequired
             label="Bed"
             labelPlacement="outside"
             name="bed"
             placeholder="Single / Double"
             errorMessage={() => errors.bed}
-          />
+          >
+            <SelectItem key="single">Single</SelectItem>
+            <SelectItem key="double">Double</SelectItem>
+         
+          </Select>
 
           <Select
             isRequired
@@ -367,7 +401,7 @@ export default function CreateHotelForm(): JSX.Element {
             <label className="block mb-1 text-small">Images</label>
             <input
               ref={fileRef}
-              name="images[]"
+              name="images"
               type="file"
               multiple
               accept="image/*"
