@@ -59,7 +59,7 @@ const NavbarAuth: React.FC = () => {
     <Navbar position="static" className="border-b border-gray-200">
       <NavbarBrand className="flex items-center gap-3">
         <AcmeLogo />
-        <p className="font-bold text-inherit">Licxo</p>
+        <p className="font-bold text-inherit">LicxoRental</p>
       </NavbarBrand>
 
       <NavbarContent className="hidden sm:flex gap-4" justify="center">
