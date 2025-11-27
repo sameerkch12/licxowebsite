@@ -84,7 +84,7 @@ export default function ButtonTabNavigation() {
           </Button>
         </div>
 
-        {item({ icon: <Bed className="w-6 h-6" />, label: "My Room", href: "#" })}
+        {item({ icon: <Bed className="w-6 h-6" />, label: "My Room", href: "myroom" })}
         {item({ icon: <User className="w-6 h-6" />, label: "Profile", href: "/profile", rounded: "rounded-e-full" })}
       </div>
     </div>
