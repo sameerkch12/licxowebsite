@@ -25,11 +25,14 @@ const hotelSchema = new mongoose.Schema({
   },
   pgType: {
     type: String,
-    enum: ["Girls PG", "Boys PG", "Both"], // PG type field
+    // FIXED: Frontend (AddRoom.tsx) से आ रहे मानों (boys/girls/co) से मेल खाने के लिए enum को बदला गया।
+    enum: ["boys", "girls", "co"], 
     required: true,
   },
   bed: {
     type: String,
+    // FIXED: Frontend से आ रहे मानों (single/double) को शामिल करने के लिए enum को बदला गया।
+    enum: ["single", "double", "none"],
     default: "none",
   },
   price: {
@@ -42,10 +45,12 @@ const hotelSchema = new mongoose.Schema({
   },
   wifi: {
     type: String,
+    // `wifi` और `furnished` के लिए "yes"/"no" इनपुट के लिए तैयार
     default: "No",
   },
   furnished: {
     type: String,
+    // `furnished` के लिए "furnished"/"semi"/"unfurnished" इनपुट के लिए तैयार
     default: "No",
   },
   images: [
@@ -72,19 +77,22 @@ const hotelSchema = new mongoose.Schema({
       default: "Point",
     },
     coordinates: {
-      type: [Number],
+      type: [Number], // [longitude, latitude]
       required: true,
     },
-    timestamp: { type: Date, default: Date.now },
   },
   status: {
     type: String,
-    enum: ["Pending", "Successful"], // Status field
-    default: "Pending", // Default value
+    enum: ["Pending", "Successful"],
+    default: "Pending",
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
 });
 
-// Create a geospatial index on the location field
+// Geo-spatial queries को सक्षम करने के लिए index बनाना
 hotelSchema.index({ location: "2dsphere" });
 
 const Hotels = mongoose.model("Hotels", hotelSchema);

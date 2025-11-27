@@ -6,6 +6,7 @@ import AddRoom from "@/pages/AddRoom";
 import ProfilePage from "./pages/Profile";
 import LoginFlow from "./components/LoginFlow";
 import ProtectedRoute from "./components/ProtectedRoute"; // ⭐ ADD THIS
+import MyRoom from "./pages/MyRoom";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+      
 
       <Route
         path="/profile"
@@ -46,6 +48,15 @@ function App() {
         element={
           <ProtectedRoute>
             <GoogleSearch />
+          </ProtectedRoute>
+        }
+      />
+
+         <Route
+        path="/myroom"
+        element={
+          <ProtectedRoute>
+            <MyRoom/>
           </ProtectedRoute>
         }
       />

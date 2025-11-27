@@ -1,6 +1,8 @@
 import React from "react";
 import { Form, Input, Select, SelectItem, Button } from "@heroui/react";
 import DefaultLayout from "@/layouts/default";
+import { useNavigate } from "react-router-dom";
+
 
 // --- Type Definitions ---
 const API_BASE = import.meta.env.VITE_Server_API_URL ?? "";
@@ -24,31 +26,32 @@ export default function CreateHotelForm(): JSX.Element {
   const [submitting, setSubmitting] = React.useState<boolean>(false);
   const [serverMsg, setServerMsg] = React.useState<string | null>(null);
   const [location, setLocation] = React.useState({
-  state: "",
-  district: ""
-});
+    state: "",
+    district: ""
+  });
 
   // Ref for the native file input element
   const fileRef = React.useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   // Keep selected files and their preview URLs for UI
   const [imagePreviews, setImagePreviews] = React.useState<ImagePreview[]>([]);
-  
+
   // State for latitude and longitude, controlled for the UI to update with useMyLocation
   const [latLng, setLatLng] = React.useState({ latitude: "", longitude: "" });
 
   // Helper to update previews when user picks files
   const handleFilesChange = (files: FileList | null) => {
     if (!files) return;
-    
+
     // Revoke old URLs to prevent memory leaks
     imagePreviews.forEach((p) => URL.revokeObjectURL(p.url));
-    
-    const arr: ImagePreview[] = Array.from(files).map((f: File) => ({ 
-      file: f, 
-      url: URL.createObjectURL(f) 
+
+    const arr: ImagePreview[] = Array.from(files).map((f: File) => ({
+      file: f,
+      url: URL.createObjectURL(f)
     }));
-    
+
     setImagePreviews(arr);
   };
 
@@ -67,13 +70,13 @@ export default function CreateHotelForm(): JSX.Element {
   // Basic validation for required fields
   const validate = (data: FormData, files: FileList | null): ValidationErrors => {
     const e: ValidationErrors = {};
-    
+
     // Helper function for required string fields
     const checkRequired = (key: string, message: string) => {
       // Explicitly check if images are required and present
-  if (files && files.length === 0) {
-      e.images = "Please add at least one image"; // 👈 Using the 'files' parameter here
-  }
+      if (files && files.length === 0) {
+        e.images = "Please add at least one image"; // 👈 Using the 'files' parameter here
+      }
       if (!data.get(key)?.toString().trim()) {
         e[key] = message;
       }
@@ -94,16 +97,13 @@ export default function CreateHotelForm(): JSX.Element {
     // Latitude & longitude should exist and be parseable numbers
     const lat = data.get("latitude");
     const lng = data.get("longitude");
-    
+
     if (!lat || isNaN(parseFloat(lat.toString()))) {
       e.latitude = "Valid latitude required";
     }
     if (!lng || isNaN(parseFloat(lng.toString()))) {
       e.longitude = "Valid longitude required";
     }
-
-    // Optional: ensure at least one image if you want
-    // if (files && files.length === 0) e.images = "Please add at least one image";
 
     return e;
   };
@@ -122,7 +122,7 @@ export default function CreateHotelForm(): JSX.Element {
         setter("latitude", String(latitude));
         setter("longitude", String(longitude));
         setServerMsg("Location filled from your device.");
-        
+
         // Clear any previous latitude/longitude validation errors
         setErrors((prev) => {
           const copy = { ...prev };
@@ -171,7 +171,7 @@ export default function CreateHotelForm(): JSX.Element {
     setSubmitting(true);
 
     try {
-     
+
       const res = await fetch( `${API_BASE}api/v1/hotels/create`, {
         method: "POST",
         body: fd,
@@ -181,17 +181,22 @@ export default function CreateHotelForm(): JSX.Element {
       const json = await res.json().catch(() => ({ message: "No JSON response" }));
 
       if (!res.ok) {
+        // Log the full error response for debugging
+        console.error("Server Error Response:", json);
         setServerMsg(json.error || json.message || `Server returned ${res.status}`);
       } else {
         setServerMsg("Hotel created successfully");
+      
         formEl.reset();
         if (fileRef.current) fileRef.current.value = "";
-        
+
         // Clear previews and revoke URLs
         imagePreviews.forEach((p) => URL.revokeObjectURL(p.url));
         setImagePreviews([]);
         setLatLng({ latitude: "", longitude: "" }); // Reset lat/lng state
+        setLocation({ state: "", district: "" }); // Reset location state
         setErrors({});
+        navigate("/myroom");
       }
     } catch (err) {
       // Type assertion for network error
@@ -209,12 +214,13 @@ export default function CreateHotelForm(): JSX.Element {
     imagePreviews.forEach((p) => URL.revokeObjectURL(p.url));
     setImagePreviews([]);
     setLatLng({ latitude: "", longitude: "" }); // Reset lat/lng state
+    setLocation({ state: "", district: "" }); // Reset location state
   };
 
   return (
     <DefaultLayout>
       <Form
-        className="w-full justify-center items-center space-y-4"
+        className="w-full p-6 justify-center items-center space-y-4"
         validationErrors={errors}
         onReset={onReset}
         onSubmit={onSubmit}
@@ -240,19 +246,21 @@ export default function CreateHotelForm(): JSX.Element {
             errorMessage={() => errors.phone}
           />
 
-         
-
           <Input
             isRequired
-            label="Room"
+            label="Price"
             labelPlacement="outside"
-            name="room"
-            placeholder="2 BHK"
-            errorMessage={() => errors.room}
+            name="price"
+            placeholder="5000"
+            type="number"
+            errorMessage={() => errors.price}
           />
+
+
+          {/* FIX: Removed duplicate Input with name="room". Keeping only the Select */}
           <Select
             isRequired
-            label="Room"
+            label="Room Type (BHK)"
             labelPlacement="outside"
             name="room"
             placeholder="Select Room Type"
@@ -286,45 +294,37 @@ export default function CreateHotelForm(): JSX.Element {
             placeholder="Near City Mall"
             errorMessage={() => errors.address1}
           />
-         <Input
-  isRequired
-  label="State"
-  labelPlacement="outside"
-  name="state"
-  value={location.state}
-  onChange={(e) =>
-    setLocation((prev) => ({ ...prev, state: e.target.value }))
-  }
-  placeholder="Uttar Pradesh"
-  errorMessage={() => errors.state}
-/>
 
-<Input
-  isRequired
-  label="District"
-  labelPlacement="outside"
-  name="district"
-  value={location.district}
-  onChange={(e) =>
-    setLocation((prev) => ({ ...prev, district: e.target.value }))
-  }
-  placeholder="Lucknow"
-  errorMessage={() => errors.district}
-/>
+          <Input
+            isRequired
+            label="State"
+            labelPlacement="outside"
+            name="state"
+            value={location.state}
+            onChange={(e) =>
+              setLocation((prev) => ({ ...prev, state: e.target.value }))
+            }
+            placeholder="Uttar Pradesh"
+            errorMessage={() => errors.state}
+          />
 
+          {/* This is the CORRECT controlled Input for District */}
           <Input
             isRequired
             label="District"
             labelPlacement="outside"
             name="district"
+            value={location.district}
+            onChange={(e) =>
+              setLocation((prev) => ({ ...prev, district: e.target.value }))
+            }
             placeholder="Lucknow"
             errorMessage={() => errors.district}
           />
+          {/* FIX: Removed duplicate Input with name="district" */}
 
-          
 
           {/* Amenities/Features */}
-       
           <Select
             isRequired
             label="Bed"
@@ -335,7 +335,6 @@ export default function CreateHotelForm(): JSX.Element {
           >
             <SelectItem key="single">Single</SelectItem>
             <SelectItem key="double">Double</SelectItem>
-         
           </Select>
 
           <Select
