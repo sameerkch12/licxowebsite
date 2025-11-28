@@ -42,6 +42,7 @@ interface HotelListing {
     coordinates: [number, number];
   };
   images: ImageObject[];
+  status?: string;
   createdAt?: string;
 }
 
@@ -109,7 +110,22 @@ const ListingCard: React.FC<{ listing: HotelListing; onDelete: (id: string) => v
     <Card isHoverable>
       <Image isZoomed alt={listing.name} className="w-full h-48 object-cover" src={primaryImageUrl} />
       <CardBody>
-        <h3 className="text-xl font-semibold mb-1">{listing.name}</h3>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-xl font-semibold">{listing.name}</h3>
+          {/* Status badge: show 'To Pending' if status is Pending, else show 'User room is live' */}
+          {(() => {
+            const isPending = String(listing.status ?? "").toLowerCase() === "pending";
+            const label = isPending ? "To Pending" : "User room is live";
+            const classes = isPending
+              ? "text-yellow-800 bg-yellow-100 px-2 py-1 rounded text-xs font-medium"
+              : "text-green-800 bg-green-100 px-2 py-1 rounded text-xs font-medium";
+            return (
+              <span aria-live="polite" className={classes}>
+                {label}
+              </span>
+            );
+          })()}
+        </div>
         <p className="text-default-500 text-sm">{fullAddress}</p>
 
         <div className="mt-3 space-y-1 text-sm">
