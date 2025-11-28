@@ -7,7 +7,7 @@ import {
   MessageSquare, 
   PhoneCall, 
   Info, 
-  Settings, 
+
   LogOut, 
   
 } from "lucide-react";
