@@ -50,11 +50,11 @@ export default function ProfileMenu() {
 
   // Menu Items with Icons
   const items = [
-    { title: "My Room", icon: <Home size={20} />, link: "/my-room" },
+    { title: "My Room", icon: <Home size={20} />, link: "/myroom" },
     { title: "Feedback", icon: <MessageSquare size={20} />, link: "/feedback" },
     { title: "Contact Us", icon: <PhoneCall size={20} />, link: "/contact" },
     { title: "About App", icon: <Info size={20} />, link: "/about" },
-    { title: "Settings", icon: <Settings size={20} />, link: "/settings" },
+   
   ];
 
   return (

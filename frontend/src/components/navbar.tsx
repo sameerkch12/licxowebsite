@@ -73,10 +73,18 @@ const NavbarAuth: React.FC = () => {
           </HeroLink>
         </NavbarItem>
 
-        <NavbarItem isActive>
+        <NavbarItem>
           <HeroLink aria-current="page" href="/contact">
             Contact Us
           </HeroLink>
+        </NavbarItem>
+
+        <NavbarItem>
+          <HeroLink href="/feedback">Feedback</HeroLink>
+        </NavbarItem>
+
+        <NavbarItem>
+          <HeroLink href="/about">About</HeroLink>
         </NavbarItem>
 
         <NavbarItem>

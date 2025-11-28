@@ -4,6 +4,10 @@ import IndexPage from "@/pages/index";
 import GoogleSearch from "@/components/GoogleSearch";
 import AddRoom from "@/pages/AddRoom";
 import ProfilePage from "./pages/Profile";
+import AboutPage from "@/pages/about";
+import ContactPage from "@/pages/contact";
+import FeedbackPage from "@/pages/feedback";
+import SettingsPage from "@/pages/settings";
 import LoginFlow from "./components/LoginFlow";
 import ProtectedRoute from "./components/ProtectedRoute"; // ⭐ ADD THIS
 import MyRoom from "./pages/MyRoom";
@@ -26,6 +30,11 @@ function App() {
 
         }
       />
+
+      {/* public informational pages */}
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/contact" element={<ContactPage />} />
+      <Route path="/feedback" element={<FeedbackPage />} />
 
       <Route
         path="/addroom"
@@ -51,6 +60,15 @@ function App() {
         element={
           <ProtectedRoute>
             <GoogleSearch />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <SettingsPage />
           </ProtectedRoute>
         }
       />

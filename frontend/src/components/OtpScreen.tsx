@@ -100,6 +100,9 @@ const OtpScreen: React.FC<Props> = ({ phone, onVerified, goBack }) => {
             +91 {onlyDigits}
           </strong>
         </p>
+        <p className=" text-red-500 font-semibold">
+  Enter Default OTP: 0000
+</p>
 
         {/* OTP Input Grid */}
         <div className="flex justify-between gap-3 sm:gap-4 max-w-sm">
