@@ -157,6 +157,7 @@ export default function MyRoom(): JSX.Element {
   const [listings, setListings] = React.useState<HotelListing[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [toast, setToast] = React.useState<{ message: string; type?: "success" | "error" } | null>(null);
 
   // Memoize user phone so we don't recalc on every render
   const USER_PHONE = React.useMemo(() => getUserPhoneFromToken(), []);
@@ -213,17 +214,25 @@ export default function MyRoom(): JSX.Element {
     setListings((s) => s.filter((l) => l._id !== id));
 
     try {
-      const endpoint = `${API_BASE}api/v1/hotels/${encodeURIComponent(id)}`;
-      const res = await fetch(endpoint, { method: "DELETE" });
+      const endpoint = `${API_BASE}api/v1/hotels/delete/${encodeURIComponent(id)}`;
+      const res = await fetch(endpoint, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+
       if (!res.ok) {
         const parsed = await res.json().catch(() => null);
         throw new Error(parsed?.message ?? `Delete failed (status ${res.status})`);
       }
       // success -> nothing to do (already removed)
+      setToast({ message: "Listing deleted successfully.", type: "success" });
+      window.setTimeout(() => setToast(null), 3000);
     } catch (err) {
       console.error("Delete failed:", err);
       setListings(previous); // rollback
-      alert("Failed to delete listing. Please try again or contact support.");
+      setToast({ message: "Failed to delete listing. Please try again.", type: "error" });
+      window.setTimeout(() => setToast(null), 4000);
     }
   };
 
@@ -276,6 +285,17 @@ export default function MyRoom(): JSX.Element {
   return (
     <DefaultLayout>
       <div className="p-6 max-w-3xl mx-auto">
+        {toast && (
+          <div className="fixed right-4 top-6 z-50">
+            <div
+              className={`px-4 py-2 rounded shadow text-sm ${
+                toast.type === "success" ? "bg-green-600 text-white" : "bg-red-600 text-white"
+              }`}
+            >
+              {toast.message}
+            </div>
+          </div>
+        )}
         <header className="mb-6 flex justify-between items-center">
           <h1 className="text-2xl font-bold"> My Listings</h1>
           <Link to="/addroom">
