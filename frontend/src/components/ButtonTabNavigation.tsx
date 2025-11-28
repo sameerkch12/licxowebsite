@@ -1,18 +1,20 @@
-import React, { useState } from "react";
-import { Home, Search, PlusCircle, User, Bed } from "lucide-react";
-import { Button } from "@heroui/react";
-import { useLocation } from "react-router-dom";
 
-const useAuth = (): boolean => {
-  return Boolean(typeof window !== "undefined" && localStorage.getItem("token"));
-};
+import { Home, User, Bed } from "lucide-react"; // Removed Search and PlusCircle
+import { useLocation } from "react-router-dom";
+// Note: The Button component and useAuth hook were only used for the Add/Plus button,
+// which is being removed, so they are kept for compilation safety but are no longer active.
+
+// The useAuth hook is no longer functionally required but is kept if other parts rely on it.
+
 
 export default function ButtonTabNavigation() {
   const { pathname } = useLocation();
-  const isAuthenticated = useAuth();
-
-  const [isLoading, setIsLoading] = useState(false);
-
+  // const isAuthenticated = useAuth(); // Not used anymore
+  
+  // const [isLoading, setIsLoading] = useState(false); // Not used anymore
+  
+  // The handleAdd function is no longer needed as the button is removed.
+  /*
   async function handleAdd() {
     if (!isAuthenticated) {
       window.location.href = "/login";
@@ -21,21 +23,26 @@ export default function ButtonTabNavigation() {
 
     try {
       setIsLoading(true);
-      // Simulate work (replace with real async action if needed)
       await new Promise((res) => setTimeout(res, 900));
       window.location.href = "/addroom";
     } finally {
       setIsLoading(false);
     }
   }
+  */
 
   const item = (opts: { icon: React.ReactNode; label: string; href: string; rounded?: string }) => {
+    // Determine active state based on current pathname
     const active = opts.href !== "#" && pathname === opts.href;
+    
+    // Set color class for active/inactive state
     const colorClass = active ? "text-red-600 dark:text-red-400" : "text-gray-700 dark:text-gray-300";
+    
     return (
       <button
         type="button"
         title={opts.label}
+        // Use window.location.href for navigation
         onClick={() => (opts.href === "#" ? undefined : (window.location.href = opts.href))}
         className={`inline-flex flex-col items-center justify-center px-4 py-1 group ${opts.rounded ?? ""} hover:bg-neutral-100 dark:hover:bg-neutral-800`}
       >
@@ -47,45 +54,22 @@ export default function ButtonTabNavigation() {
 
   return (
     <div className="fixed z-50 w-full h-16 max-w-lg -translate-x-1/2 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-full bottom-4 left-1/2 lg:hidden">
-      <div className="grid h-full max-w-lg grid-cols-5 mx-auto items-center">
+      {/* CHANGED: grid-cols-5 to grid-cols-3 
+        The layout now accommodates only 3 items.
+      */}
+      <div className="grid h-full max-w-lg grid-cols-3 mx-auto items-center">
+        
+        {/* 1. Home (Leftmost, rounded start) */}
         {item({ icon: <Home className="w-6 h-6" />, label: "Home", href: "/", rounded: "rounded-s-full" })}
-        {item({ icon: <Search className="w-6 h-6" />, label: "Search", href: "/search" })}
-
-        <div className="flex items-center justify-center">
-          <Button
-            isLoading={isLoading}
-            spinner={
-              <svg
-                className="animate-spin h-5 w-5 text-current"
-                fill="none"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2-647z"
-                  fill="currentColor"
-                />
-              </svg>
-            }
-            onClick={handleAdd}
-            className="bg-white dark:bg-neutral-900 rounded-full w-12 h-12 -mt-8 translate-y-1 border-4 border-white dark:border-neutral-900 shadow-md flex items-center justify-center"
-          >
-            {!isLoading && <PlusCircle className="w-6 h-6 text-red-600 dark:text-red-400" />}
-            <span className="sr-only">Add Room</span>
-          </Button>
-        </div>
-
-        {item({ icon: <Bed className="w-6 h-6" />, label: "My Room", href: "myroom" })}
+        
+        {/* 2. My Room (Center) */}
+        {item({ icon: <Bed className="w-6 h-6" />, label: "My Room", href: "/myroom" })} 
+        
+        {/* 3. Profile (Rightmost, rounded end) */}
         {item({ icon: <User className="w-6 h-6" />, label: "Profile", href: "/profile", rounded: "rounded-e-full" })}
+        
+        {/* Removed: Search, Add Room (and its related Button/logic/imports) */}
+
       </div>
     </div>
   );

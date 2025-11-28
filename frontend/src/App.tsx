@@ -7,12 +7,15 @@ import ProfilePage from "./pages/Profile";
 import LoginFlow from "./components/LoginFlow";
 import ProtectedRoute from "./components/ProtectedRoute"; // ⭐ ADD THIS
 import MyRoom from "./pages/MyRoom";
+import ResultsPage from "./pages/ResultsPage";
 
 function App() {
   return (
     <Routes>
       {/* -------------------- PUBLIC ROUTES -------------------- */}
       <Route path="/login" element={<LoginFlow />} />
+     
+        <Route path="/results" element={<ResultsPage />} />
 
       {/* -------------------- PROTECTED ROUTES -------------------- */}
       <Route
@@ -32,7 +35,7 @@ function App() {
           </ProtectedRoute>
         }
       />
-      
+
 
       <Route
         path="/profile"
@@ -52,11 +55,11 @@ function App() {
         }
       />
 
-         <Route
+      <Route
         path="/myroom"
         element={
           <ProtectedRoute>
-            <MyRoom/>
+            <MyRoom />
           </ProtectedRoute>
         }
       />

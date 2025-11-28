@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { Search, MapPin, TrendingUp, ChevronRight } from "lucide-react";
+
+import {   TrendingUp, ChevronRight } from "lucide-react";
 import UrgentBanner from "@/components/UrgentFindRoom";
+import SearchPage from "./SearchPage";
 
 // Helper function to navigate for search
 const go = (v: string) => {
@@ -9,14 +10,7 @@ const go = (v: string) => {
 };
 
 export default function App() {
-  const [q, setQ] = useState<string>("");
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (q.trim()) {
-      go(q.trim());
-    }
-  };
 
   const topDestinations = ["Near me", "Bangalore", "Chennai", "Delhi", "Gurgaon", "Hyderabad", "Mumbai", "Pune", "Kolkata", "Goa", "Jaipur"];
 
@@ -42,11 +36,11 @@ export default function App() {
               <div className="p-6 sm:p-8 lg:p-12 flex flex-col justify-center">
                 
                 {/* Heading placed above the search form */}
-                <h2 className="text-3xl md:text-4xl font-extrabold text-indigo-700 mb-6 dark:text-indigo-400">
-                    <span className="text-gray-900 dark:text-gray-50">Find Rooms</span> at Best Prices
+                <h2 className="text-2xl md:text-2xl font-extrabold text-indigo-700 mb-1 dark:text-indigo-400">
+                    <span className="text-gray-900 dark:text-gray-50">Find Rooms and PG </span> at Best Prices
                 </h2>
 
-                <form onSubmit={submit} className="w-full">
+                <form  className="w-full">
                   
                   {/* Destination Input */}
                   <label 
@@ -57,31 +51,11 @@ export default function App() {
                   </label>
                   
                   <div className="relative mb-6">
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500 w-5 h-5 dark:text-indigo-400" />
-                    <input
-                      id="destination-search"
-                      type="text"
-                      value={q}
-                      onChange={(e) => setQ(e.target.value)}
-                      placeholder="City, location or hotel name..."
-                      // Dark mode input styling
-                      className="w-full pl-12 pr-4 py-4 text-base border-0 border-b border-gray-300 focus:border-indigo-500 rounded-none focus:ring-0 focus:outline-none transition duration-300 placeholder:text-gray-400 dark:bg-gray-800 dark:text-gray-50 dark:border-gray-700 dark:focus:border-indigo-400"
-                      style={{ cursor: "text" }}
-                      required
-                    />
+                    
+                <SearchPage/>
                   </div>
                   
-                  {/* Search Button */}
-                  <button 
-                    type="submit" 
-                    className="w-full bg-indigo-600 text-white text-lg font-bold py-4 rounded-xl 
-                               hover:bg-indigo-700 transition duration-300 
-                               flex items-center justify-center space-x-2 disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-600"
-                    disabled={!q.trim()}
-                  >
-                    <Search className="w-5 h-5"/>
-                    <span>Search Hotels</span>
-                  </button>
+                
                 </form>
                 
                 {/* Explore Destinations Section - SWIPEABLE */}

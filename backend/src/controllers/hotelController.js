@@ -171,7 +171,41 @@ const getOneHotelDetail = async (req, res) => {
 };
 
 
+
+const searchHotels = async (req, res) => {
+  try {
+    const { lat, lng, radius = 5000 } = req.query;
+    console.log(lat, lng, radius);
+
+    if (!lat || !lng) {
+      return res.status(400).json({
+        success: false,
+        message: "Latitude (lat) & Longitude (lng) required"
+      });
+    }
+
+    const hotels = await Hotels.find({
+      location: {
+        $near: {
+          $geometry: { type: "Point", coordinates: [parseFloat(lng), parseFloat(lat)] },
+          $maxDistance: parseInt(radius) // meters => 5000 = 5 km
+        }
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      count: hotels.length,
+      hotels,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
+  searchHotels,
   createHotel,
   getAllHotels,
   getOneHotel,
