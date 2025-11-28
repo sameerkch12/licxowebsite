@@ -1,6 +1,7 @@
 import { TrendingUp, ChevronRight } from "lucide-react";
 
 import SearchPage from "./SearchPage";
+import FeedbackScroller from "@/components/Feedback";
 
 // ===============================
 // ✅ City-wise URL Mapping (LIVE DOMAIN)
@@ -115,6 +116,7 @@ export default function App() {
             </div>
           </div>
         </div>
+        <FeedbackScroller/>
       </main>
     </div>
   );
