@@ -1,8 +1,7 @@
 import React from "react";
-import { Form, Input, Select, SelectItem, Button } from "@heroui/react";
+import { Form, Input, Select, SelectItem, Button, Spinner } from "@heroui/react";
 import DefaultLayout from "@/layouts/default";
 import { useNavigate } from "react-router-dom";
-
 
 // --- Type Definitions ---
 const API_BASE = import.meta.env.VITE_Server_API_URL ?? "";
@@ -16,6 +15,14 @@ interface ImagePreview {
 /** Type for the validation errors object */
 type ValidationErrors = {
   [key: string]: string;
+};
+
+// --- Custom Toast Helper (For demonstration, replace with a real library like react-toastify) ---
+// In a real app, this would use a proper UI component/hook.
+const showNotification = (message: string, type: 'success' | 'error') => {
+    console.log(`[${type.toUpperCase()}]: ${message}`);
+    // Ideally, trigger a visible, floating toast component here.
+    alert(`${type.toUpperCase()}: ${message}`); // Simple fallback
 };
 
 // --- Component ---
@@ -53,14 +60,32 @@ export default function CreateHotelForm(): JSX.Element {
     }));
 
     setImagePreviews(arr);
+    
+    // Clear image error when files are added
+    setErrors((prev) => {
+      const copy = { ...prev };
+      delete copy.images;
+      return copy;
+    });
   };
 
   React.useEffect(() => {
-    // Cleanup on unmount
+    // Cleanup on unmount (revoking URLs)
     return () => {
       imagePreviews.forEach((p) => URL.revokeObjectURL(p.url));
     };
-  }, [imagePreviews]); // dependency array ensures cleanup function is current
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array ensures cleanup runs once on unmount
+
+  // Cleanup effect for when imagePreviews change (needed if we were dynamically removing images)
+  React.useEffect(() => {
+     // This effect ensures that the cleanup function in the *return* above uses the latest imagePreviews
+     // if the component were to unmount after a preview change. For this specific cleanup structure, 
+     // an empty array in the first useEffect is often enough, but keeping this pattern here for robustness.
+     return () => {
+        imagePreviews.forEach((p) => URL.revokeObjectURL(p.url));
+     };
+  }, [imagePreviews]);
 
   // Helper to set DOM form input values (used by useMyLocation)
   const setFieldValue = (name: "latitude" | "longitude", value: string) => {
@@ -73,16 +98,17 @@ export default function CreateHotelForm(): JSX.Element {
 
     // Helper function for required string fields
     const checkRequired = (key: string, message: string) => {
-      // Explicitly check if images are required and present
-      if (files && files.length === 0) {
-        e.images = "Please add at least one image"; // 👈 Using the 'files' parameter here
-      }
       if (!data.get(key)?.toString().trim()) {
         e[key] = message;
       }
     };
 
-    checkRequired(" owner name", "Name is required");
+    // Images validation
+    if (!files || files.length === 0) {
+      e.images = "Please add at least one image";
+    }
+
+    checkRequired("name", "Name is required");
     checkRequired("phone", "Phone is required");
     checkRequired("price", "Price is required");
     checkRequired("room", "Room info is required");
@@ -94,7 +120,7 @@ export default function CreateHotelForm(): JSX.Element {
     checkRequired("wifi", "Wifi (yes/no) is required");
     checkRequired("furnished", "Furnished info required");
 
-    // Latitude & longitude should exist and be parseable numbers
+    // Latitude & longitude validation
     const lat = data.get("latitude");
     const lng = data.get("longitude");
 
@@ -118,7 +144,6 @@ export default function CreateHotelForm(): JSX.Element {
     navigator.geolocation.getCurrentPosition(
       (pos: GeolocationPosition) => {
         const { latitude, longitude } = pos.coords;
-        // Set values using the helper function
         setter("latitude", String(latitude));
         setter("longitude", String(longitude));
         setServerMsg("Location filled from your device.");
@@ -132,7 +157,6 @@ export default function CreateHotelForm(): JSX.Element {
         });
       },
       (err: GeolocationPositionError) => {
-        // Handle geolocation errors clearly
         if (err.code === err.PERMISSION_DENIED) {
           setServerMsg("Location permission denied. Allow location access to use this feature.");
         } else {
@@ -151,12 +175,11 @@ export default function CreateHotelForm(): JSX.Element {
     const formEl = e.currentTarget;
     const fd = new FormData(formEl);
 
-    // Get files from the ref
     const files: FileList | null = fileRef.current?.files ?? null;
 
-    // Append files explicitly under `images` to match multer's field name
+    // Append files explicitly under `images` for Multer
     if (files && files.length > 0) {
-      fd.delete("images"); // Remove any existing entry (from standard form submission)
+      fd.delete("images");
       for (let i = 0; i < files.length; i++) {
         fd.append("images", files[i]);
       }
@@ -165,42 +188,47 @@ export default function CreateHotelForm(): JSX.Element {
     const validationErrors = validate(fd, files);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      // Optional: Scroll to the first error
       return;
     }
 
     setSubmitting(true);
 
     try {
-
-      const res = await fetch( `${API_BASE}api/v1/hotels/create`, {
+      const res = await fetch(`${API_BASE}api/v1/hotels/create`, {
         method: "POST",
         body: fd,
       });
 
-      // Handle non-JSON responses gracefully
       const json = await res.json().catch(() => ({ message: "No JSON response" }));
 
       if (!res.ok) {
-        // Log the full error response for debugging
         console.error("Server Error Response:", json);
-        setServerMsg(json.error || json.message || `Server returned ${res.status}`);
+        const errorMsg = json.error || json.message || `Server returned ${res.status}`;
+        setServerMsg(errorMsg);
+        showNotification(errorMsg, 'error'); // Show error notification
       } else {
-        setServerMsg("Hotel created successfully");
-      
+        // --- Success Handling ---
+        setServerMsg("Hotel created successfully!");
+        showNotification("Hotel created successfully!", 'success'); // Show success notification
+        
+        // Reset form and state
         formEl.reset();
         if (fileRef.current) fileRef.current.value = "";
 
-        // Clear previews and revoke URLs
         imagePreviews.forEach((p) => URL.revokeObjectURL(p.url));
         setImagePreviews([]);
-        setLatLng({ latitude: "", longitude: "" }); // Reset lat/lng state
-        setLocation({ state: "", district: "" }); // Reset location state
+        setLatLng({ latitude: "", longitude: "" }); 
+        setLocation({ state: "", district: "" }); 
         setErrors({});
-        navigate("/myroom");
+        
+        // Navigate after a short delay for user to see the success message
+        setTimeout(() => navigate("/myroom"), 1500); 
       }
     } catch (err) {
-      // Type assertion for network error
-      setServerMsg("Network error: " + (err as Error).message);
+      const errorMsg = "Network error: " + (err as Error).message;
+      setServerMsg(errorMsg);
+      showNotification(errorMsg, 'error'); // Show network error notification
     } finally {
       setSubmitting(false);
     }
@@ -210,156 +238,74 @@ export default function CreateHotelForm(): JSX.Element {
     setErrors({});
     setServerMsg(null);
     if (fileRef.current) fileRef.current.value = "";
-    // Clear previews and revoke URLs
     imagePreviews.forEach((p) => URL.revokeObjectURL(p.url));
     setImagePreviews([]);
-    setLatLng({ latitude: "", longitude: "" }); // Reset lat/lng state
-    setLocation({ state: "", district: "" }); // Reset location state
+    setLatLng({ latitude: "", longitude: "" }); 
+    setLocation({ state: "", district: "" });
   };
+  
+  const isImageSelected = imagePreviews.length > 0;
 
   return (
     <DefaultLayout>
       <Form
-        className="w-full p-6 justify-center items-center space-y-4"
+        className="w-full p-6 justify-center items-center space-y-4 mb-10"
         validationErrors={errors}
         onReset={onReset}
         onSubmit={onSubmit}
       >
         <div className="flex flex-col gap-4 max-w-lg">
+          
           {/* General Details */}
-          <Input
-            isRequired
-            label="Owner Name"
-            labelPlacement="outside"
-            name="owner name"
-            placeholder="Green Residency"
-            errorMessage={() => errors.name}
-          />
-
-          <Input
-            isRequired
-            label="Phone"
-            labelPlacement="outside"
-            name="phone"
-            placeholder="9876543210"
-            type="tel"
-            errorMessage={() => errors.phone}
-          />
-
-          <Input
-            isRequired
-            label="Price"
-            labelPlacement="outside"
-            name="price"
-            placeholder="5000"
-            type="number"
-            errorMessage={() => errors.price}
-          />
-
-
-          {/* FIX: Removed duplicate Input with name="room". Keeping only the Select */}
-          <Select
-            isRequired
-            label="Room Type (BHK)"
-            labelPlacement="outside"
-            name="room"
-            placeholder="Select Room Type"
-            errorMessage={() => errors.room}
-          >
+          <Input isRequired label="Name" labelPlacement="outside" name="name" errorMessage={() => errors.name} />
+          <Input isRequired label="Phone" labelPlacement="outside" name="phone" type="tel" errorMessage={() => errors.phone} />
+          <Input isRequired label="Price" labelPlacement="outside" name="price" type="number" errorMessage={() => errors.price} />
+          <Select isRequired label="Room Type (BHK)" labelPlacement="outside" name="room" errorMessage={() => errors.room}>
             <SelectItem key="1bhk">1 BHK</SelectItem>
             <SelectItem key="2bhk">2 BHK</SelectItem>
             <SelectItem key="3bhk">3 BHK</SelectItem>
             <SelectItem key="4bhk">4 BHK</SelectItem>
           </Select>
-
-          <Select
-            isRequired
-            label="PG Type"
-            labelPlacement="outside"
-            name="pgType"
-            placeholder="Select PG Type"
-            errorMessage={() => errors.pgType}
-          >
+          <Select isRequired label="PG Type" labelPlacement="outside" name="pgType" errorMessage={() => errors.pgType}>
             <SelectItem key="boys">Boys</SelectItem>
             <SelectItem key="girls">Girls</SelectItem>
             <SelectItem key="co">Co-living</SelectItem>
           </Select>
 
           {/* Address Details */}
-          <Input
-            isRequired
-            label="Address Line 1"
-            labelPlacement="outside"
-            name="address1"
-            placeholder="Near City Mall"
-            errorMessage={() => errors.address1}
-          />
-
-          <Input
-            isRequired
-            label="State"
-            labelPlacement="outside"
-            name="state"
+          <Input isRequired label="Address Line 1" labelPlacement="outside" name="address1" errorMessage={() => errors.address1} />
+          <Input 
+            isRequired 
+            label="State" 
+            labelPlacement="outside" 
+            name="state" 
             value={location.state}
-            onChange={(e) =>
-              setLocation((prev) => ({ ...prev, state: e.target.value }))
-            }
-            placeholder="Uttar Pradesh"
+            onChange={(e) => setLocation((prev) => ({ ...prev, state: e.target.value }))}
             errorMessage={() => errors.state}
           />
-
-          {/* This is the CORRECT controlled Input for District */}
-          <Input
-            isRequired
-            label="District"
-            labelPlacement="outside"
-            name="district"
+          <Input 
+            isRequired 
+            label="District" 
+            labelPlacement="outside" 
+            name="district" 
             value={location.district}
-            onChange={(e) =>
-              setLocation((prev) => ({ ...prev, district: e.target.value }))
-            }
-            placeholder="Lucknow"
+            onChange={(e) => setLocation((prev) => ({ ...prev, district: e.target.value }))}
             errorMessage={() => errors.district}
           />
-          {/* FIX: Removed duplicate Input with name="district" */}
-
 
           {/* Amenities/Features */}
-          <Select
-            isRequired
-            label="Bed"
-            labelPlacement="outside"
-            name="bed"
-            placeholder="Single / Double"
-            errorMessage={() => errors.bed}
-          >
+          <Select isRequired label="Bed" labelPlacement="outside" name="bed" errorMessage={() => errors.bed}>
             <SelectItem key="single">Single</SelectItem>
             <SelectItem key="double">Double</SelectItem>
           </Select>
-
-          <Select
-            isRequired
-            label="Wifi"
-            labelPlacement="outside"
-            name="wifi"
-            placeholder="yes / no"
-            errorMessage={() => errors.wifi}
-          >
-            <SelectItem key="yes">yes</SelectItem>
-            <SelectItem key="no">no</SelectItem>
+          <Select isRequired label="Wifi" labelPlacement="outside" name="wifi" errorMessage={() => errors.wifi}>
+            <SelectItem key="yes">Yes</SelectItem>
+            <SelectItem key="no">No</SelectItem>
           </Select>
-
-          <Select
-            isRequired
-            label="Furnished"
-            labelPlacement="outside"
-            name="furnished"
-            placeholder="furnished / semi / unfurnished"
-            errorMessage={() => errors.furnished}
-          >
-            <SelectItem key="furnished">furnished</SelectItem>
-            <SelectItem key="semi">semi</SelectItem>
-            <SelectItem key="unfurnished">unfurnished</SelectItem>
+          <Select isRequired label="Furnished" labelPlacement="outside" name="furnished" errorMessage={() => errors.furnished}>
+            <SelectItem key="furnished">Furnished</SelectItem>
+            <SelectItem key="semi">Semi</SelectItem>
+            <SelectItem key="unfurnished">Unfurnished</SelectItem>
           </Select>
 
           {/* Latitude & Longitude with Geolocation Button */}
@@ -369,9 +315,8 @@ export default function CreateHotelForm(): JSX.Element {
               label="Latitude"
               labelPlacement="outside"
               name="latitude"
-              value={latLng.latitude} // Controlled value from state
+              value={latLng.latitude} 
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLatLng({ ...latLng, latitude: e.target.value })}
-              placeholder="26.8467"
               errorMessage={() => errors.latitude}
             />
             <Input
@@ -379,9 +324,8 @@ export default function CreateHotelForm(): JSX.Element {
               label="Longitude"
               labelPlacement="outside"
               name="longitude"
-              value={latLng.longitude} // Controlled value from state
+              value={latLng.longitude} 
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLatLng({ ...latLng, longitude: e.target.value })}
-              placeholder="80.9462"
               errorMessage={() => errors.longitude}
             />
             <div className="mt-6">
@@ -395,26 +339,66 @@ export default function CreateHotelForm(): JSX.Element {
             </div>
           </div>
 
-          {/* Native file input for images (multiple). */}
+          {/* 📸 ENHANCED IMAGE UPLOAD SECTION */}
           <div>
-            <label className="block mb-1 text-small">Images</label>
+            <label className="block mb-1 text-small **font-semibold**">📸 Hotel Images (Required)</label>
             <input
               ref={fileRef}
               name="images"
               type="file"
               multiple
               accept="image/*"
+              className="**hidden**" // Hide the native input
+              id="file-upload"
               onChange={(ev: React.ChangeEvent<HTMLInputElement>) => handleFilesChange(ev.target.files)}
             />
-            {errors.images && <div className="text-danger text-small">{errors.images}</div>}
+
+            {/* Custom File Input/Drop Area UI */}
+            <label
+              htmlFor="file-upload"
+              className={`
+                flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors
+                ${isImageSelected 
+                    ? '**border-success-400** bg-success-50' 
+                    : errors.images 
+                        ? '**border-danger-400** bg-danger-50'
+                        : '**border-gray-400** hover:border-blue-500 hover:bg-gray-50'
+                }
+              `}
+            >
+              {isImageSelected ? (
+                <>
+                  <p className="text-medium text-success-600">
+                    **✅ {imagePreviews.length} Image(s) Selected** - Click to change
+                  </p>
+                  <p className="text-small text-gray-500">
+                    (Click anywhere in this box to select more/new files)
+                  </p>
+                </>
+              ) : (
+                <>
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                  <p className="text-medium text-gray-500 mt-1">
+                    **Click to upload** or **drag and drop** photos
+                  </p>
+                  <p className="text-small text-gray-400">
+                    JPG, PNG, GIF (At least one image is required)
+                  </p>
+                </>
+              )}
+            </label>
+
+            {errors.images && <div className="text-danger text-small mt-1">{errors.images}</div>}
 
             {/* Previews */}
-            {imagePreviews.length > 0 && (
+            {isImageSelected && (
               <div className="mt-2 grid grid-cols-3 gap-2">
                 {imagePreviews.map((p, i) => (
-                  <div key={i} className="border rounded overflow-hidden p-1">
+                  <div key={i} className="border rounded overflow-hidden relative shadow-sm">
                     <img src={p.url} alt={`preview-${i}`} className="w-full h-24 object-cover" />
-                    <div className="text-xs truncate mt-1">{p.file.name}</div>
+                    <div className="absolute top-0 right-0 bg-primary-600 text-white text-xs px-2 py-0.5 rounded-bl">
+                      {i + 1}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -422,17 +406,31 @@ export default function CreateHotelForm(): JSX.Element {
           </div>
 
           <div className="flex gap-4">
+            {/* 2. SUBMIT BUTTON WITH LOADING SPINNER */}
             <Button className="w-full" color="primary" type="submit" disabled={submitting}>
-              {submitting ? "Submitting..." : "Create Hotel"}
+              {submitting ? (
+                <span className="flex items-center justify-center">
+                  <Spinner size="sm" color="white" className="mr-2" />
+                  **Creating Hotel...**
+                </span>
+              ) : (
+                "Create Hotel"
+              )}
             </Button>
             <Button type="reset" variant="bordered" disabled={submitting}>
               Reset
             </Button>
           </div>
 
-          {serverMsg && <div className="text-small mt-2">{serverMsg}</div>}
+          {/* Server Message/Simple Toast Display */}
+          {serverMsg && (
+            <div className={`text-small mt-2 p-3 rounded-lg border 
+              ${serverMsg.includes('successfully') ? 'bg-green-50 text-green-700 border-green-300' : 'bg-red-50 text-red-700 border-red-300'}
+            `}>
+              {serverMsg}
+            </div>
+          )}
         </div>
-        <div> <br></br></div>
       </Form>
     </DefaultLayout>
   );
