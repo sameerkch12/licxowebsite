@@ -82,7 +82,7 @@ export default function CreateHotelForm(): JSX.Element {
       }
     };
 
-    checkRequired("name", "Name is required");
+    checkRequired(" owner name", "Name is required");
     checkRequired("phone", "Phone is required");
     checkRequired("price", "Price is required");
     checkRequired("room", "Room info is required");
@@ -229,9 +229,9 @@ export default function CreateHotelForm(): JSX.Element {
           {/* General Details */}
           <Input
             isRequired
-            label="Name"
+            label="Owner Name"
             labelPlacement="outside"
-            name="name"
+            name="owner name"
             placeholder="Green Residency"
             errorMessage={() => errors.name}
           />
