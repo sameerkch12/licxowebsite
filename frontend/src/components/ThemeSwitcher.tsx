@@ -15,7 +15,7 @@ export const ThemeSwitcher = () => {
                  bg-gray-800 text-white dark:bg-gray-200 dark:text-black 
                  transition"
     >
-      {theme === "dark" ? (
+      {theme === "light" ? (
         <>
           <Moon className="w-3 h-5" />
          
