@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 interface DecodedToken {
   id: string;
   phoneNumber: string;
+  name?: string;
   iat: number;
   exp: number;
 }
@@ -77,7 +78,7 @@ export default function ProfileMenu() {
             <div className="text-center mt-2">
               {/* Fallback Name since token doesn't have name */}
               <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-                Hello, User!
+                {user ? user.name || "User Name" : "User Name"}
               </h2>
               {/* Display Phone Number from Token */}
               <p className="text-gray-500 dark:text-gray-400 font-medium flex items-center justify-center gap-1 mt-1">

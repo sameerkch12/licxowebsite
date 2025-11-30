@@ -4,28 +4,29 @@ const User = require("../models/userModel");
 // const { twilioClient, verifyServiceSid } = require("../config/twilioConfig");
 
 // Send OTP (Demo)
+const DEMO_OTP = "0000";
+
 const sendOtp = async (req, res) => {
   const { phoneNumber } = req.body;
 
   if (!phoneNumber) {
-    return res.status(400).send({ message: "Phone number is required" });
+    return res.status(400).json({ message: "Phone number is required" });
   }
 
   try {
     // DEMO: not integrating Twilio here
     // In production: send actual SMS via provider
-    console.log(`[DEMO] OTP would be sent to ${phoneNumber}`);
+    console.log(`[DEMO] OTP (${DEMO_OTP}) would be sent to ${phoneNumber}`);
 
-    res.status(200).send({
+    res.status(200).json({
       message: "OTP sent successfully (demo)",
       sid: "demo-sid-000000",
       // NOTE: for demo/testing you can choose to return a demo OTP like "000000"
-      // otp: "000000"
+      // otp: DEMO_OTP
     });
   } catch (error) {
-    res
-      .status(500)
-      .send({ message: "Error sending OTP", error: error.message });
+    console.error("Error sending OTP:", error);
+    res.status(500).json({ message: "Error sending OTP" });
   }
 };
 
@@ -36,24 +37,34 @@ const verifyOtp = async (req, res) => {
   if (!phoneNumber || !code) {
     return res
       .status(400)
-      .send({ message: "Phone number and OTP are required" });
+      .json({ message: "Phone number and OTP are required" });
   }
 
   try {
-    // DEMO: accept "000000" as valid OTP
-    if (code === "0000") {
+    // DEMO: accept DEMO_OTP as valid OTP
+    if (code === DEMO_OTP) {
       const user = await User.findOne({ phoneNumber });
 
       if (user) {
+        if (!process.env.JWT_SECRET) {
+          console.error("Missing JWT_SECRET");
+          return res.status(500).json({ message: "Server misconfiguration" });
+        }
+
         const token = jwt.sign(
-          { id: user._id, phoneNumber: user.phoneNumber },
+          {
+            id: user._id,
+            phoneNumber: user.phoneNumber,
+            name: user.name,
+            email: user.email,
+          },
           process.env.JWT_SECRET,
           {
             expiresIn: "7d",
           }
         );
 
-        return res.status(200).send({
+        return res.status(200).json({
           message: "OTP verified successfully",
           token,
           userExists: true,
@@ -67,15 +78,14 @@ const verifyOtp = async (req, res) => {
       } else {
         return res
           .status(200)
-          .send({ message: "OTP verified successfully", userExists: false });
+          .json({ message: "OTP verified successfully", userExists: false });
       }
     } else {
-      return res.status(400).send({ message: "Invalid OTP" });
+      return res.status(400).json({ message: "Invalid OTP" });
     }
   } catch (error) {
-    res
-      .status(500)
-      .send({ message: "Error verifying OTP", error: error.message });
+    console.error("Error verifying OTP:", error);
+    res.status(500).json({ message: "Error verifying OTP" });
   }
 };
 
@@ -86,7 +96,7 @@ const completeRegistration = async (req, res) => {
   if (!phoneNumber || !name || !email) {
     return res
       .status(400)
-      .send({ message: "Phone number, name and email are required" });
+      .json({ message: "Phone number, name and email are required" });
   }
 
   try {
@@ -95,7 +105,7 @@ const completeRegistration = async (req, res) => {
     if (existingUser) {
       return res
         .status(400)
-        .send({ message: "User already exists. Login using OTP." });
+        .json({ message: "User already exists. Login using OTP." });
     }
 
     // Optional: also check email uniqueness (model enforces unique if schema has unique: true)
@@ -103,21 +113,31 @@ const completeRegistration = async (req, res) => {
     if (existingEmailUser) {
       return res
         .status(400)
-        .send({ message: "Email already in use. Try logging in." });
+        .json({ message: "Email already in use. Try logging in." });
     }
 
     const user = new User({ phoneNumber, name, email });
     await user.save();
 
+    if (!process.env.JWT_SECRET) {
+      console.error("Missing JWT_SECRET");
+      return res.status(500).json({ message: "Server misconfiguration" });
+    }
+
     const token = jwt.sign(
-      { id: user._id, phoneNumber: user.phoneNumber },
+      {
+        id: user._id,
+        phoneNumber: user.phoneNumber,
+        name: user.name,
+        email: user.email,
+      },
       process.env.JWT_SECRET,
       {
         expiresIn: "7d",
       }
     );
 
-    res.status(201).send({
+    res.status(201).json({
       message: "User registered successfully",
       token,
       user: {
@@ -128,9 +148,10 @@ const completeRegistration = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Error completing registration:", error);
     res
       .status(500)
-      .send({ message: "Error completing registration", error: error.message });
+      .json({ message: "Error completing registration" });
   }
 };
 
