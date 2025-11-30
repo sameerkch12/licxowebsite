@@ -64,7 +64,20 @@ const RoomDetailComponent: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [mapUrl, setMapUrl] = useState<string | null>(null);
-  const [mainImage, setMainImage] = useState<string | undefined>(undefined); 
+  const [mainImage, setMainImage] = useState<string | undefined>(undefined);
+  const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
+  const [lightboxImage, setLightboxImage] = useState<string | undefined>(undefined);
+
+  const openLightbox = (url?: string) => {
+    if (!url) return;
+    setLightboxImage(url);
+    setIsLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setIsLightboxOpen(false);
+    setLightboxImage(undefined);
+  };
 
   useEffect(() => {
     if (!id) {
@@ -106,6 +119,15 @@ const RoomDetailComponent: React.FC = () => {
 
     fetchRoom();
   }, [id]);
+
+  // Close lightbox on ESC
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeLightbox();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // --- Loading State (Dark Mode Skeleton) ---
   if (loading) {
@@ -154,44 +176,75 @@ const RoomDetailComponent: React.FC = () => {
                    dark:bg-gray-800 dark:border-gray-700">
       
       {/* Hero Image Section */}
-      <div className="relative h-72 w-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-        {mainImage ? (
-          <Image
-            src={mainImage}
-            alt={`${room.name} main image`}
-            className="w-full h-full object-cover transition-transform duration-500 ease-in-out hover:scale-105"
-          />
-        ) : (
-          <div className="text-gray-400 text-lg">No main image available</div>
-        )}
-      </div>
+      <div className="relative h-72 w-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+        {mainImage ? (
+          <div className="w-full h-full cursor-zoom-in" onClick={() => openLightbox(mainImage)}>
+            <Image
+              src={mainImage}
+              alt={`${room.name} main image`}
+              className="w-full h-full object-cover transition-transform duration-500 ease-in-out hover:scale-105"
+            />
+          </div>
+        ) : (
+          <div className="text-gray-400 text-lg">No main image available</div>
+        )}
+      </div>
 
       {/* Image Thumbnails */}
       <div className="flex gap-3 overflow-x-auto p-4 bg-white border-b border-gray-200 -mt-8 relative z-10 rounded-b-xl shadow-inner
                    dark:bg-gray-800 dark:border-gray-700">
         {room.images?.length > 0 ? (
-          room.images.map((img: ImageType, index: number) => (
-            <Image
-              key={img.public_id}
-              src={img.url}
-              alt={`${room.name} thumbnail ${index + 1}`}
-              width={100}
-              height={75}
-              className={`
-                min-w-[100px] max-h-[75px] rounded-lg shadow-md object-cover cursor-pointer
-                border-2 transition-all duration-200 ease-in-out
-                ${mainImage === img.url ? 'border-indigo-500 scale-105' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-500'}
-              `}
-              onClick={() => setMainImage(img.url)}
-            />
-          ))
+          room.images.map((img: ImageType, index: number) => (
+            <div
+              key={img.public_id}
+              onClick={() => setMainImage(img.url)}
+              className={`min-w-[100px] max-h-[75px] rounded-lg overflow-hidden cursor-pointer border-2 transition-all duration-200 ease-in-out
+                ${mainImage === img.url ? 'border-indigo-500 scale-105' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-500'}`}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setMainImage(img.url); } }}
+            >
+              <Image
+                src={img.url}
+                alt={`${room.name} thumbnail ${index + 1}`}
+                width={100}
+                height={75}
+                className="w-full h-full object-cover rounded-lg shadow-md"
+              />
+            </div>
+          ))
         ) : (
             <p className="text-gray-400 w-full text-center py-4 text-sm">No images to display</p>
         )}
       </div>
 
+      {/* Lightbox Modal */}
+      {isLightboxOpen && lightboxImage && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70"
+          onClick={closeLightbox}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] p-4" onClick={(e) => e.stopPropagation()}>
+            <button
+              aria-label="Close image"
+              onClick={closeLightbox}
+              className="absolute -top-10 right-2 md:top-4 md:right-6 z-50 text-white text-3xl leading-none bg-black bg-opacity-40 rounded-full p-1 hover:bg-opacity-60"
+            >
+              ✕
+            </button>
+            <Image
+              src={lightboxImage}
+              alt={`${room.name} enlarged`}
+              className="max-h-[80vh] w-auto rounded-lg object-contain"
+            />
+          </div>
+        </div>
+      )}
+
       <CardHeader className="p-6 pt-4 flex flex-col items-start gap-2">
-        <h2 className="text-4xl font-extrabold text-gray-900 leading-tight dark:text-white">{room.name}</h2>
+        <h2 className="text-2xl font-extrabold text-gray-900 leading-tight dark:text-white">{room.name}</h2>
         <p className="text-xl font-semibold text-indigo-700 flex items-center gap-2 dark:text-indigo-400">
             <span className="text-2xl">🏷️</span> {room.pgType} Room - ₹{room.price.toLocaleString('en-IN')} <span className="text-base text-gray-500 dark:text-gray-400">/ month</span>
         </p>
