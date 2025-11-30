@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardHeader, CardBody } from "@heroui/react";
+import { Card,  CardBody } from "@heroui/react";
 import { Home, Mail, Phone, Search, Users, Clock, Shield } from "lucide-react";
 import DefaultLayout from "@/layouts/default";
 
