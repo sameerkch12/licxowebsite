@@ -12,12 +12,14 @@ import LoginFlow from "./components/LoginFlow";
 import ProtectedRoute from "./components/ProtectedRoute"; // ⭐ ADD THIS
 import MyRoom from "./pages/MyRoom";
 import ResultsPage from "./pages/ResultsPage";
+import RoomDetail from "./components/RoomDetail";
 
 function App() {
   return (
     <Routes>
       {/* -------------------- PUBLIC ROUTES -------------------- */}
       <Route path="/login" element={<LoginFlow />} />
+      <Route path="/hotel/:id" element={<RoomDetail />} />
      
         <Route path="/results" element={<ResultsPage />} />
 
